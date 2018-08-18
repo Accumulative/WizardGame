@@ -1,0 +1,8 @@
+*.o
+*_*.csv
+*.out
+.idea
+include
+lib
+*.db
+cmake-build-debug
