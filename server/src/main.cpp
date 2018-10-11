@@ -47,6 +47,39 @@ int main(int argc, char** argv) {
 
 	while(running) {
 		npc_manager->update();
+        for(int i=0;i<socketvector.size();i++) {
+            if (npc_manager->getUpdateTimeout() == 0) {
+                npc_manager->UpdateNPCs();
+                for (int s = 0; s < socketvector.size(); s++) {
+                    // send all the NPCs' positions
+                    std::cout << "Sending all npc data" << std::endl;
+                    std::ostringstream out;
+                    for (auto &n : npc_manager->getNpcsOnScreen(socketvector[s].mapId, socketvector[s].pos)) {
+                        out << "3 0 " << n.id << " " << static_cast<int>(n.pos.x) << " " << static_cast<int>(n.pos.y)
+                            << " |";
+                    }
+                    std::string toReturn = out.str();
+                    toReturn.pop_back();
+                    NetworkHelper::SendMessage((toReturn + '\n').c_str(), socketvector[s].socket);
+                }
+                npc_manager->resetUpdateTimeout();
+            }
+//            std::cout << i << " " << SDL_GetTicks() - socketvector[i].timeout << std::endl;
+            if (SDL_GetTicks() - socketvector[i].timeout > 20000) {
+                std::cout << "Disconnecting player: " << socketvector[i].id << std::endl;
+                sprintf(tmp, "2 %d \n", socketvector[i].id);
+                for (int k = 0; k < socketvector.size(); k++) {
+                    if (k != i) {
+                        NetworkHelper::SendMessage(tmp, socketvector[k].socket);
+                    }
+                }
+                SDLNet_TCP_Close(socketvector[i].socket);
+                SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
+                socketvector.erase(socketvector.begin() + i);
+                playernum--;
+            }
+        }
+
 		while(SDL_PollEvent(&event))
 			if(event.type==SDL_QUIT || event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_ESCAPE)
 				running = false;
@@ -65,122 +98,92 @@ int main(int argc, char** argv) {
 			}
 			NetworkHelper::SendMessage(tmp, tmpsocket);
 		}
-		if(npc_manager->getUpdateTimeout() == 0) {
-			npc_manager->UpdateNPCs();
-			for(int i=0;i<socketvector.size();i++) {
-			// send all the npcs' positions
-				std::cout << "Sending all npc data" << std::endl;
-                std::ostringstream out;
-				for(auto& n : npc_manager->getNpcsOnScreen(socketvector[i].mapId, socketvector[i].pos)) {
-                    out << "3 0 " << n.id << " " << static_cast<int>(n.pos.x) << " " << static_cast<int>(n.pos.y) << " |";
-				}
-                std::string toReturn = out.str();
-                toReturn.pop_back();
-                NetworkHelper::SendMessage((toReturn + '\n').c_str(), socketvector[i].socket);
-			}
-			npc_manager->resetUpdateTimeout();
-		}
 		// check for incoming data
 		while(SDLNet_CheckSockets(sockets, 0) > 0) {
 			for(int i=0;i<socketvector.size();i++) {
-				if(SDLNet_SocketReady(socketvector[i].socket)) {
-					
-					int newData = 0;
-					do {
-						newData += SDLNet_TCP_Recv(socketvector[i].socket, tmp+newData, 1400);
-						if(newData<=0)
-							break;
-					}while(tmp[strlen(tmp)-1] != '\n');
-					
-					if(newData != 0) {
-						socketvector[i].timeout=SDL_GetTicks();
-						switch(tmp[0]) {
-							case '1': {
-							int mapId;
-							Vector2D vel;
-							Vector2D pos;
-							int tmp_id;
-							sscanf(tmp, "1 %d %d %f %f %f %f \n", &tmp_id, &mapId, &pos.x, &pos.y, &vel.x, &vel.y);
-							socketvector[i].pos = pos;
-							socketvector[i].mapId = mapId;
-							for(int k=0;k<socketvector.size(); k++) {
-								if(k != i) {
-									if(socketvector[i].mapId == socketvector[k].mapId) {
-										if(fabsf(socketvector[k].pos.x - pos.x) < 1000 && fabsf(socketvector[k].pos.y - pos.y) < 1000) {
-											NetworkHelper::SendMessage(tmp, socketvector[k].socket);
-										}
-									}
-								}
-							}
-							break;
-						}
-						case '2': {
-							for(int k=0;k<socketvector.size(); k++) {
-								if(k==i)
-									continue;
-								NetworkHelper::SendMessage(tmp, socketvector[k].socket);
-							}
-							SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
-							SDLNet_TCP_Close(socketvector[i].socket);
-							socketvector.erase(socketvector.begin()+i);
-							playernum--;
-							break;
-						}
-						case '3': {
-							int tmp1, xpos, ypos, mapid;
-                            sscanf(tmp, "3 1 %d %d %d %d \n", &tmp1, &mapid, &xpos, &ypos);
-							socketvector[i].mapId = mapid;
-							socketvector[i].pos = Vector2D(static_cast<float>(xpos), static_cast<float>(ypos));
-							std::cout << "Checking for npcs: " << mapid << " " << socketvector[i].pos << std::endl;
-                            std::ostringstream out;
-							for(auto& n : npc_manager->getNpcsOnScreen(socketvector[i].mapId, socketvector[i].pos)) {
-								replaceAll(n.name, " ", "+");
-                                out << "3 1 " << n.id << " " << static_cast<int>(n.pos.x) << " " << static_cast<int>(n.pos.y) << " " << n.name.c_str() << " "
-                                    << n.image_name.c_str() << " " << n.canFight << " |";
-//								sprintf(tmp, "3 1 %d %d %d %s %s %d \n", n.id, static_cast<int>(n.pos.x), static_cast<int>(n.pos.y), n.name.c_str(), n.image_name.c_str(), n.canFight);
-//								NetworkHelper::SendMessage(tmp, socketvector[i].socket);
-//								std::cout << "Sending join map info for: " << tmp << std::endl;
-							}
-//							sprintf(tmp, "3 2 \n");
-                            out << "3 2 \n";
-                            NetworkHelper::SendMessage(out.str().c_str(), socketvector[i].socket);
-                            std::cout << "Complete map join with: " << out.str() << std::endl;
-							break;
-						}
-						case '4': {
-							std::cout << " after receive: " << i << " " << tmp <<std::endl;
-							int tmpvar1, tmpvar2, tmpvar3;
-							sscanf(tmp, "4 %d %d %d \n", &tmpvar1, &tmpvar2, &tmpvar3);
-							for(int k =0; k<socketvector.size(); k++) {
-								if(socketvector[k].id==tmpvar2) {
-									std::cout << "sending battl req to " << tmpvar2 <<std::endl;
-									NetworkHelper::SendMessage(tmp, socketvector[k].socket);
-									break;
-								}
-							}
-						break;
-					}
-					}
-					if(SDL_GetTicks()-socketvector[i].timeout>1000) {
-						std::cout << "Disconnecting player: " << socketvector[i].id << std::endl;
-						sprintf(tmp, "2 %d \n", socketvector[i].id);
-						for(int k=0;k<socketvector.size(); k++) {
-							if(k != i) {
-								NetworkHelper::SendMessage(tmp, socketvector[k].socket);
-							}
-						}
-						SDLNet_TCP_Close(socketvector[i].socket);
-						SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
-						socketvector.erase(socketvector.begin()+i);
-						playernum--;
-					}
-				}
-			}
+                if (SDLNet_SocketReady(socketvector[i].socket)) {
+
+                    int newData = 0;
+                    do {
+                        newData += SDLNet_TCP_Recv(socketvector[i].socket, tmp + newData, 1400);
+                        if (newData <= 0)
+                            break;
+                    } while (tmp[strlen(tmp) - 1] != '\n');
+
+                    if (newData != 0) {
+                        socketvector[i].timeout = SDL_GetTicks();
+                        switch (tmp[0]) {
+                            case '1': {
+                                int mapId;
+                                Vector2D vel;
+                                Vector2D pos;
+                                int tmp_id;
+                                sscanf(tmp, "1 %d %d %f %f %f %f \n", &tmp_id, &mapId, &pos.x, &pos.y, &vel.x, &vel.y);
+                                socketvector[i].pos = pos;
+                                socketvector[i].mapId = mapId;
+                                for (int k = 0; k < socketvector.size(); k++) {
+                                    if (k != i) {
+                                        if (socketvector[i].mapId == socketvector[k].mapId) {
+                                            if (fabsf(socketvector[k].pos.x - pos.x) < 1000 &&
+                                                fabsf(socketvector[k].pos.y - pos.y) < 1000) {
+                                                NetworkHelper::SendMessage(tmp, socketvector[k].socket);
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                            case '2': {
+                                for (int k = 0; k < socketvector.size(); k++) {
+                                    if (k == i)
+                                        continue;
+                                    NetworkHelper::SendMessage(tmp, socketvector[k].socket);
+                                }
+                                SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
+                                SDLNet_TCP_Close(socketvector[i].socket);
+                                socketvector.erase(socketvector.begin() + i);
+                                playernum--;
+                                break;
+                            }
+                            case '3': {
+                                int tmp1, xpos, ypos, mapid;
+                                sscanf(tmp, "3 1 %d %d %d %d \n", &tmp1, &mapid, &xpos, &ypos);
+                                socketvector[i].mapId = mapid;
+                                socketvector[i].pos = Vector2D(static_cast<float>(xpos), static_cast<float>(ypos));
+                                std::cout << "Checking for npcs: " << mapid << " " << socketvector[i].pos << std::endl;
+                                std::ostringstream out;
+                                for (auto &n : npc_manager->getNpcsOnMap(socketvector[i].mapId)) {
+                                    replaceAll(n.name, " ", "+");
+                                    out << "3 1 " << n.id << " " << static_cast<int>(n.pos.x) << " "
+                                        << static_cast<int>(n.pos.y) << " " << n.name.c_str() << " "
+                                        << n.image_name.c_str() << " " << n.canFight << " |";
+                                }
+                                out << "3 2 \n";
+                                NetworkHelper::SendMessage(out.str().c_str(), socketvector[i].socket);
+                                std::cout << "Complete map join with: " << out.str() << std::endl;
+                                break;
+                            }
+                            case '4': {
+                                std::cout << " after receive: " << i << " " << tmp << std::endl;
+                                int tmpvar1, tmpvar2, tmpvar3;
+                                sscanf(tmp, "4 %d %d %d \n", &tmpvar1, &tmpvar2, &tmpvar3);
+                                for (int k = 0; k < socketvector.size(); k++) {
+                                    if (socketvector[k].id == tmpvar2) {
+                                        std::cout << "sending battl req to " << tmpvar2 << std::endl;
+                                        NetworkHelper::SendMessage(tmp, socketvector[k].socket);
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
 		}
-	}
-	SDL_Delay(1);
-	SDL_RenderClear(renderer);
-	SDL_RenderPresent(renderer);
+        SDL_Delay(1);
+        SDL_RenderClear(renderer);
+        SDL_RenderPresent(renderer);
 	}
 	for(int i = 0; i<socketvector.size(); i++) {
 		SDLNet_TCP_Close(socketvector[i].socket);

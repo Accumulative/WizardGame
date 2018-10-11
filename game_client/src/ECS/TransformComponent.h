@@ -6,6 +6,7 @@ class TransformComponent : public Component
 {
 public:
 	Vector2D position;
+    Vector2D prevPosition;
 	Vector2D velocity;
 
 	int height = 32;
@@ -14,8 +15,6 @@ public:
 	int mapId = 1;
 
 	int speed = 3;
-
-	bool blocked = false;
 
 	TransformComponent()
 	{
@@ -45,14 +44,20 @@ TransformComponent(float x, float y, int h, int w, float sc, int speed)
 	{
 		TransformComponent(x ,y, h, w, sc, 3);
 	}
-	
+	void Collide() {
+        position = prevPosition;
+    }
 
 	void init() override
 	{
 		velocity.Zero();
 	}
+    Vector2D GetTotalVel() {
+        return velocity * speed;
+    }
 	void update() override
 	{
+        prevPosition = position;
 		position.x += velocity.x * speed;
 		position.y += velocity.y * speed;
 	}

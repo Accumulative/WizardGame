@@ -45,8 +45,8 @@ public:
 
 		transform = &entity->getComponent<TransformComponent>();
 
-		tex = TextureManager::LoadTexture("assets/ColTex.png");
-		srcR = { 0, 0, 32, 32 };
+//		tex = TextureManager::LoadTexture("assets/ColTex.png");
+//		srcR = { 0, 0, 32, 32 };
 		destR = { collider.x, collider.y, collider.w, collider.h };
 
 	}
@@ -63,13 +63,13 @@ public:
 		destR.y = collider.y - Game::camera.y;
 	}
 
-	void draw() override
-	{
-		if (tag != ColliderType::Player)
-		{
-			TextureManager::Draw(tex, srcR, destR, SDL_FLIP_NONE);
-		}
-	}
+//	void draw() override
+//	{
+//		if (tag != ColliderType::Player)
+//		{
+//			TextureManager::Draw(tex, srcR, destR, SDL_FLIP_NONE);
+//		}
+//	}
 
 private:
 

@@ -23,7 +23,6 @@ public:
 	Vector2D& operator*=(const Vector2D& vec);
 	Vector2D& operator/=(const Vector2D& vec);
 
-	Vector2D& operator*(const int& i);
 	Vector2D& Zero();
 
 	friend std::ostream& operator<<(std::ostream& stream, const Vector2D& vec);
@@ -69,5 +68,13 @@ inline Vector2D operator/(const Vector2D& v1, const Vector2D& v2)
     Vector2D newVector;
     newVector.x = v1.x / v2.x;
     newVector.y = v1.y / v2.y;
+    return newVector;
+}
+
+inline Vector2D operator*(const Vector2D& v1, const int& i)
+{
+    Vector2D newVector;
+    newVector.x = v1.x * i;
+    newVector.y = v1.y * i;
     return newVector;
 }

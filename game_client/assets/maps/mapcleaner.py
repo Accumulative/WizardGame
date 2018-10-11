@@ -1,12 +1,12 @@
 import csv
 
-# mapNum = 1
-# sizeX = 33;
-# sizeY = 42;
+mapNum = 1
+sizeX = 68;
+sizeY = 42;
 
-mapNum = 2
-sizeX = 22;
-sizeY = 17;
+# mapNum = 2
+# sizeX = 22;
+# sizeY = 17;
 
 def cleanFile(src, dest):
 	countY = 0;

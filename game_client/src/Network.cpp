@@ -87,7 +87,6 @@
                 if (type == 0) {
                     if (myId == -1) {
                         NetworkComponent *network = &(e->getComponent<NetworkComponent>());
-                        int mapId;
                         sscanf(r.c_str(), "0 %d", &id);
                         e->addComponent<SpriteComponent>("player", true, true);
                         e->getComponent<SpriteComponent>().addAnimation(0, 3, "Idle", 300);
@@ -110,7 +109,6 @@
                         for (i = 0; i < enemies.size(); i++) {
                             if (enemies[i]->getComponent<NetworkComponent>().getId() == id) {
                                 TransformComponent *transform = &(enemies[i]->getComponent<TransformComponent>());
-                                // ColliderComponent *collider = &(enemies[i]->getComponent<ColliderComponent>());
                                 int tmp2, tmp3;
                                 Vector2D vel;
                                 sscanf(r.c_str(), "1 %d %d %f %f %f %f", &tmp2, &tmp3, &(transform->position.x),
@@ -143,8 +141,9 @@
                             sscanf(r.c_str(), "1 %d %d %f %f %f %f", &tmp1, &tmp6, &tmp2, &tmp3, &tmp4, &tmp5);
                             if (tmp6 == e->getComponent<TransformComponent>().mapId) {
                                 auto &newEnemy(manager->addEntity());
+                                std::cout << "Getting new enemy" << std::endl;
                                 newEnemy.addComponent<TransformComponent>(tmp2, tmp3, 44, 33, 1, 1);
-                                newEnemy.addComponent<SpriteComponent>("player", true, true);
+                                newEnemy.addComponent<SpriteComponent>("enemy", true, true);
                                 newEnemy.getComponent<SpriteComponent>().addAnimation(0, 3, "Idle", 300);
                                 newEnemy.getComponent<SpriteComponent>().addAnimation(1, 3, "WalkForward", 300);
                                 newEnemy.getComponent<SpriteComponent>().addAnimation(2, 4, "WalkSideward", 300);

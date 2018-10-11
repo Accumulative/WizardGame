@@ -24,8 +24,6 @@ void Map::LoadMap(int path, int sizeX, int sizeY, int tileSetSizeX, int tileSetS
 
 	std::cout << "Load map: " << "assets/maps/" + std::to_string(path) + "/Background.csv with size " << sizeX << " and " << sizeY << std::endl;
 
-	int srcX, srcY;
-
 	for(int z = 0; z < 3; z++) {
 		mapFile.open("assets/maps/" + std::to_string(path) + "/" + std::to_string(z) + ".csv");
 		for (int y = 0; y < sizeY; y++)
@@ -38,7 +36,6 @@ void Map::LoadMap(int path, int sizeX, int sizeY, int tileSetSizeX, int tileSetS
 					src += c;
 					mapFile.get(c);
 				}
-					// std::cout << "X: " << x << "Y: " << y << std::endl;
 				AddTile( atoi(src.c_str()), x * scaledSize, y * scaledSize, static_cast<TileLayer>(z));
 			}
 		}

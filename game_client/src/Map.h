@@ -41,7 +41,7 @@ struct MapData {
 inline MapData GetMapData(int mapid) {
 	switch(mapid) {
 		case 1:
-			return MapData { 1, Vector2D { 0 , 0 }, 33, 42 };
+			return MapData { 1, Vector2D { 0 , 0 }, 68, 42 };
 			break;
 		case 2:
 			return MapData { 2, Vector2D { 0 , 0 }, 22, 17 };

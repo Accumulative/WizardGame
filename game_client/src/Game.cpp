@@ -1,26 +1,20 @@
 #include "Game.h"
 #include "Map.h"
 #include <map>
-#include <Vector2D.h>
 #include "Collision.h"
 #include "AssetManager.h"
 #include <sstream>
-#include "SDL2/SDL_net.h"
-#include "ECS/ECS.h"
 #include "ECS/TransformComponent.h"
 #include "ECS/SpriteComponent.h"
 #include "ECS/BattleComponent.h"
 #include "ECS/KeyboardController.h"
 #include "ECS/ColliderComponent.h"
 #include "ECS/TileComponent.h"
-#include "ECS/ProjectileComponent.h"
 #include "ECS/NetworkComponent.h"
 #include "ECS/EventComponent.h"
-#include "ECS/NPCComponent.h"
 #include "ECS/UILabel.h"
 #include "Menu.h"
 #include "Battle.h"
-#include <data_struct.h>
 
 Map* map;
 Manager manager;
@@ -36,7 +30,7 @@ int recentlyChangedMap = 0;
 SDL_Rect Game::camera = { 0,0, 2000,1160};
 const int Game::SCALE = 1;
 const int Game::TILE_SIZE = 32;
-const int TILESETSIZEX = 8;
+const int TILESETSIZEX = 16;
 const int TILESETSIZEY = 44;
 
 AssetManager* Game::assets = new AssetManager(&manager);
@@ -56,6 +50,9 @@ Game::Game(SDL_Renderer *renderer)
 	}
 	assets->AddTexture("terrain", "assets/magecity.png");
 	assets->AddTexture("player", "assets/WizardSheet.png");
+    assets->AddTexture("NPC1", "assets/RedWizardSheet.png");
+    assets->AddTexture("NPC2", "assets/GreenWizardSheet.png");
+    assets->AddTexture("enemy", "assets/YellowWizardSheet.png");
 	assets->AddTexture("projectile", "assets/proj.png");
 	assets->AddTexture("menu", "assets/Menu.png");
 	assets->AddTexture("menuButton", "assets/MenuButton.png");
@@ -175,7 +172,6 @@ void Game::handleEvents()
 				if(event.button.button == SDL_BUTTON_RIGHT) {
 					if( hover.getComponent<SpriteComponent>().getTarget() != -1 ) {
 						hoverMenu->LoadMenu();
-						// std::cout << "ME 2" <<std::endl;
 					}
 				}
 				break;
@@ -190,12 +186,9 @@ void Game::update()
 {
 	if(isOnline) {
 		auto* playernet = &player.getComponent<NetworkComponent>();
-			// std::cout << "12a" << std::endl;
 		net->send(&player);
 		net->recv(&manager, &player);
-
 		if(state == GameState::Connected) {
-			SDL_Rect playerCol = player.getComponent<ColliderComponent>().collider;
 			TransformComponent playerPos = player.getComponent<TransformComponent>();
 			std::stringstream ss;
 			ss << "Player position: " << playerPos.position;
@@ -203,55 +196,7 @@ void Game::update()
 			manager.refresh();
 			manager.update();
 			if(player.getComponent<BattleComponent>().GetCurrentState() != BattleState::InProgress) {
-
-				for (auto& c : colliders)
-				{
-					if(c->hasComponent<ColliderComponent>()) {
-						ColliderComponent cCol = c->getComponent<ColliderComponent>();
-						for(auto& npc : npcs) {
-                            if (Collision::AABB(npc->getComponent<ColliderComponent>().collider, cCol.collider, npc->getComponent<TransformComponent>().velocity))
-                            {
-                                if(cCol.tag == ColliderType::Terrain || cCol.tag == ColliderType::Player) {
-                                    npc->getComponent<TransformComponent>().position -= npc->getComponent<TransformComponent>().velocity;
-                                }
-                            }
-                        }
-						if (Collision::AABB(playerCol, cCol.collider, playerPos.velocity))
-						{
-							if(cCol.tag != ColliderType::Event) {
-								player.getComponent<TransformComponent>().position = playerPos.position;
-							} else if(cCol.tag == ColliderType::Event && recentlyChangedMap == 0) {
-								recentlyChangedMap = 20;
-								EventComponent ev = c->getComponent<EventComponent>();
-								MapData md = GetMapId(ev.mapId, ev.position.x, ev.position.y);
-								player.getComponent<TransformComponent>().position = md.pos * Game::TILE_SIZE * Game::SCALE;
-								map->Remove();
-								manager.refresh();
-								player.getComponent<TransformComponent>().mapId = md.mapId;
-								map->LoadMap(md.mapId, md.xSize, md.ySize, TILESETSIZEX, TILESETSIZEY);
-								net->SwitchMap(&player, md.mapId, md.pos);
-								break;
-							}
-						}
-						if(Collision::MouseAA(mouse, cCol.collider)) {
-							if(cCol.tag == ColliderType::Player) {
-								hover.getComponent<TransformComponent>().position = c->getComponent<TransformComponent>().position;
-								if(!hover.getComponent<SpriteComponent>().getShow()) {
-									hover.getComponent<SpriteComponent>().setShow(true);
-									hover.getComponent<SpriteComponent>().setTarget(c->getComponent<NetworkComponent>().getId());
-								}
-							}
-						}
-						else {
-							hover.getComponent<SpriteComponent>().setShow(false);
-						}
-					}
-					// else {
-					// 	tiles.erase(std::remove(tiles.begin(), tiles.end(), c), tiles.end());
-					// 	c->destroy();
-					// }
-				}
-				// std::cout << " 6 " << std::endl;
+                CheckCollisions();
 				camera.x = static_cast<int>(player.getComponent<TransformComponent>().position.x - 400);
 				camera.y = static_cast<int>(player.getComponent<TransformComponent>().position.y - 320);
 
@@ -296,7 +241,6 @@ void Game::update()
 				state = GameState::Connected;
 			}
 		}
-		
 		EventTypes selectedOption = mainMenu->GetSelectedOption() + hoverMenu->GetSelectedOption() + yesNoPopup->GetSelectedOption();
 		switch(selectedOption) {
 			case EventTypes::CloseMenu:
@@ -358,6 +302,62 @@ void Game::update()
 		recentlyChangedMap--;
 	}
 	
+}
+
+void Game::CheckCollisions() {
+    SDL_Rect playerCol = player.getComponent<ColliderComponent>().collider;
+    for(auto& npc : npcs) {
+        if (Collision::AABB(npc->getComponent<ColliderComponent>().collider, playerCol,
+                            npc->getComponent<TransformComponent>().GetTotalVel() - player.getComponent<TransformComponent>().GetTotalVel()))
+        {
+            npc->getComponent<TransformComponent>().Collide();
+            player.getComponent<TransformComponent>().Collide();
+        }
+    }
+    for (auto& c : colliders)
+    {
+        if(c->hasComponent<ColliderComponent>()) {
+            ColliderComponent cCol = c->getComponent<ColliderComponent>();
+            for(auto& npc : npcs) {
+                if (Collision::AABB(npc->getComponent<ColliderComponent>().collider, cCol.collider,
+                                    npc->getComponent<TransformComponent>().GetTotalVel()))
+                {
+                    if(cCol.tag == ColliderType::Terrain || cCol.tag == ColliderType::Player) {
+                        npc->getComponent<TransformComponent>().Collide();
+                    }
+                }
+            }
+            if (Collision::AABB(playerCol, cCol.collider, player.getComponent<TransformComponent>().velocity))
+            {
+                if(cCol.tag != ColliderType::Event) {
+                    player.getComponent<TransformComponent>().Collide();
+                } else if(cCol.tag == ColliderType::Event && recentlyChangedMap == 0) {
+                    recentlyChangedMap = 20;
+                    EventComponent ev = c->getComponent<EventComponent>();
+                    MapData md = GetMapId(ev.mapId, ev.position.x, ev.position.y);
+                    player.getComponent<TransformComponent>().position = md.pos * Game::TILE_SIZE * Game::SCALE;
+                    map->Remove();
+                    manager.refresh();
+                    player.getComponent<TransformComponent>().mapId = md.mapId;
+                    map->LoadMap(md.mapId, md.xSize, md.ySize, TILESETSIZEX, TILESETSIZEY);
+                    net->SwitchMap(&player, md.mapId, md.pos);
+                    break;
+                }
+            }
+            if(Collision::MouseAA(mouse, cCol.collider)) {
+                if(cCol.tag == ColliderType::Player) {
+                    hover.getComponent<TransformComponent>().position = c->getComponent<TransformComponent>().position;
+                    if(!hover.getComponent<SpriteComponent>().getShow()) {
+                        hover.getComponent<SpriteComponent>().setShow(true);
+                        hover.getComponent<SpriteComponent>().setTarget(c->getComponent<NetworkComponent>().getId());
+                    }
+                }
+            }
+            else {
+                hover.getComponent<SpriteComponent>().setShow(false);
+            }
+        }
+    }
 }
 
 void Game::setPlayerState(player_data p_data) {

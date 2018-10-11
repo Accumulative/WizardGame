@@ -34,7 +34,8 @@ public:
 	void update();
 	void render();
 	void setPlayerState(player_data p_data);
-	player_data getPlayerState();
+    void CheckCollisions();
+    player_data getPlayerState();
 
 	GameState state;
 	static SDL_Renderer *renderer;

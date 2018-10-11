@@ -63,8 +63,12 @@ public:
 				transform->velocity.y = 0;
 				sprite->Play("Idle");
 				break;
-			default:
-				break;
+            case SDLK_t:
+                transform->position.x += 100;
+                sprite->Play("Idle");
+                break;
+            default:
+                break;
 			}
 		}
 	}
