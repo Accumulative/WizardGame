@@ -6,7 +6,7 @@
 #include "ECS/TransformComponent.h"
 #include "ECS/UILabel.h"
 #include <vector>
-#include "SDL.h"
+#include <SDL2/SDL.h>
 
 extern Manager manager;
 
@@ -22,7 +22,7 @@ class Menu
 public:
 	 
 	Menu(std::string tID, std::vector<std::pair<std::string, T>> options, std::string text, int columns, Vector2D optionOffset = {0,0}) {
-		texId = tID;
+		this->texId = tID;
 		this->text = text;
 		this->columns = columns;
 		this->options = options;
@@ -48,14 +48,14 @@ public:
 		if(!loaded) {
 			this->position = pos;
 			menuSprite = &manager.addEntity();
+
 			menuSprite->addComponent<TransformComponent>(pos.x, pos.y, 24, 17, 640/24, 0);
-			menuSprite->addComponent<SpriteComponent>(texId, true, false);
+			menuSprite->addComponent<SpriteComponent>(this->texId, true, false);
 			menuSprite->getComponent<SpriteComponent>().addAnimation(0, 1, "Idle", 100);
 			menuSprite->getComponent<SpriteComponent>().addAnimation(0, 9, "Animated", 100);
 			menuSprite->getComponent<SpriteComponent>().Play("Animated");
 			AddItem(text, pos.x + 30, pos.y + 50, false, true );
 			int count = 0;
-
 			for(const std::pair<std::string, T> option : options) {
 				AddItem(option.first, pos.x + optionOffset.x + 30 + (count % columns) * 150, pos.y + optionOffset.y + 40 + 50 * (count+2 - (count % columns)), true, count == 0 ? true : false);
 				count ++;

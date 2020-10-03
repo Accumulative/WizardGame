@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include "ECS.h"
 #include "TransformComponent.h"
 #include "../TextureManager.h"

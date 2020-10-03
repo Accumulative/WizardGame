@@ -56,7 +56,17 @@
 		"deque": "cpp",
 		"list": "cpp",
 		"thread": "cpp",
-		"queue": "cpp"
+		"queue": "cpp",
+		"hash_map": "cpp",
+		"*.tcc": "cpp",
+		"clocale": "cpp",
+		"cstdarg": "cpp",
+		"cstring": "cpp",
+		"memory_resource": "cpp",
+		"optional": "cpp",
+		"iosfwd": "cpp",
+		"ostream": "cpp",
+		"streambuf": "cpp"
 	},
 	"files.exclude": {
 		"**/.git": true,

@@ -1,5 +1,5 @@
 #pragma once
-#include <SDL_net.h>
+#include <SDL2/SDL_net.h>
 #include <iostream>
 #include <cstring>
 #include "../../../shared/data_struct.h"

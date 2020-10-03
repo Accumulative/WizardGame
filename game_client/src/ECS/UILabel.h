@@ -4,8 +4,8 @@
 #include "../AssetManager.h"
 #include "../Game.h"
 
-#include <SDL.h>
-#include <SDL_ttf.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <string>
 
 class UILabel : public Component
@@ -25,10 +25,10 @@ public:
 
 	void SetLabelText(std::string text, std::string font = "arial", SDL_Color color = { 0, 0,0,255})
 	{
-		SDL_Surface* surf = TTF_RenderText_Blended_Wrapped(Game::assets->GetFont(font), text.c_str(), color, width);
+		auto fontObj = Game::assets->GetFont(font);
+		SDL_Surface* surf = TTF_RenderText_Blended_Wrapped(fontObj, text.c_str(), color, width);
 		labelTexture = SDL_CreateTextureFromSurface(Game::renderer, surf);
 		SDL_FreeSurface(surf);
-
 		SDL_QueryTexture(labelTexture, nullptr, nullptr, &position.w, &position.h);
 	}
 	void SetLabelColor(SDL_Color color) {

@@ -7,71 +7,71 @@
 #include "ECS/KeyboardController.h"
 #include "ECS/NPCComponent.h"
 #include "Spells.h"
-#include <NetworkHelper.h>
-#include <string_helper.h>
+#include "../../shared/NetworkHelper.h"
+#include "../../shared/string_helper.h"
 
-	Network::Network(const char* ipchar) {
-		SDLNet_Init();
-		IPaddress ip;
-		waiter = 0;
-		myId = -1;
-		if(SDLNet_ResolveHost(&ip, ipchar, 1234) ==-1)
-		{
-			std::cout << "Network error" <<std::endl;
-		}
-		connection = SDLNet_TCP_Open(&ip);
-		if(connection ==NULL) {
-			std::cout << "Error connection (bad ip)" << std::endl;
-		}
-		server = SDLNet_AllocSocketSet(1);
-		SDLNet_TCP_AddSocket(server, connection);
-	}
-	Network::~Network() {
-		sprintf(tmp, "2 %d \n", myId);
-		NetworkHelper::SendMessage(tmp, connection);
-		SDLNet_TCP_Close(connection);
-		SDLNet_FreeSocketSet(server);
-		SDLNet_Quit();
-	}
-	void Network::send(Entity* e) {
-		waiter++;
-		NetworkComponent network = e->getComponent<NetworkComponent>();
-		if(network.isReady()) {
-			if(waiter >= 3) {
-				TransformComponent transform = e->getComponent<TransformComponent>();
-				if((oldPos == transform.position) == false || waiter > 200) { 
-					waiter = 0;
-					oldPos = transform.position;
-					sprintf(tmp, "1 %d %d %f %f %f %f \n", network.getId(), transform.mapId, transform.position.x, transform.position.y,
-					transform.velocity.x, transform.velocity.y);
-					NetworkHelper::SendMessage(tmp, connection);
-				}
-			}
-		}
-	}
-	void Network::SwitchMap(Entity* e, int mapId, Vector2D newPos) {
-		sprintf(tmp, "3 1 %d %d %d %d \n", e->getComponent<NetworkComponent>().getId(), mapId, static_cast<int>(newPos.x), static_cast<int>(newPos.y));
-		std::cout << "Sending: " << tmp << std::endl;
-		waitingForMapChange = true;
-		NetworkHelper::SendMessage(tmp, connection);
-	}
-	void Network::SendPlayerEvent(Entity* e, int playerid, Event event, int arg1, int arg2, int arg3) {
-		NetworkComponent network = e->getComponent<NetworkComponent>();
-		int eventid = static_cast<int>(event);
-		if(network.isReady()) {
-			switch(event) {
-				case Event::Battle:
-				case Event::Decline:
-					sprintf(tmp, "4 %d %d %d \n", eventid, playerid, network.getId());
-					break;
-				case Event::Attack:
-					sprintf(tmp, "4 %d %d %d %d \n", eventid, playerid, network.getId(), arg1); // Here arg1 is the spell used
-					break;
-			}
-			NetworkHelper::SendMessage(tmp, connection);
-		}
-	}
-	void Network::recv(Manager* manager, Entity* e) {
+  Network::Network(const char* ipchar) {
+    SDLNet_Init();
+    IPaddress ip;
+    waiter = 0;
+    myId = -1;
+    if(SDLNet_ResolveHost(&ip, ipchar, 1234) ==-1)
+    {
+      std::cout << "Network error" <<std::endl;
+    }
+    connection = SDLNet_TCP_Open(&ip);
+    if(connection ==NULL) {
+      std::cout << "Error connection (bad ip)" << std::endl;
+    }
+    server = SDLNet_AllocSocketSet(1);
+    SDLNet_TCP_AddSocket(server, connection);
+  }
+  Network::~Network() {
+    sprintf(tmp, "2 %d \n", myId);
+    NetworkHelper::SendMessage(tmp, connection);
+    SDLNet_TCP_Close(connection);
+    SDLNet_FreeSocketSet(server);
+    SDLNet_Quit();
+  }
+  void Network::send(Entity* e) {
+    waiter++;
+    NetworkComponent network = e->getComponent<NetworkComponent>();
+    if(network.isReady()) {
+      if(waiter >= 3) {
+        TransformComponent transform = e->getComponent<TransformComponent>();
+        if((oldPos == transform.position) == false || waiter > 200) { 
+          waiter = 0;
+          oldPos = transform.position;
+          sprintf(tmp, "1 %d %d %f %f %f %f \n", network.getId(), transform.mapId, transform.position.x, transform.position.y,
+          transform.velocity.x, transform.velocity.y);
+          NetworkHelper::SendMessage(tmp, connection);
+        }
+      }
+    }
+  }
+  void Network::SwitchMap(Entity* e, int mapId, Vector2D newPos) {
+    sprintf(tmp, "3 1 %d %d %d %d \n", e->getComponent<NetworkComponent>().getId(), mapId, static_cast<int>(newPos.x), static_cast<int>(newPos.y));
+    std::cout << "Sending: " << tmp << std::endl;
+    waitingForMapChange = true;
+    NetworkHelper::SendMessage(tmp, connection);
+  }
+  void Network::SendPlayerEvent(Entity* e, int playerid, Event event, int arg1, int arg2, int arg3) {
+    NetworkComponent network = e->getComponent<NetworkComponent>();
+    int eventid = static_cast<int>(event);
+    if(network.isReady()) {
+      switch(event) {
+        case Event::Battle:
+        case Event::Decline:
+          sprintf(tmp, "4 %d %d %d \n", eventid, playerid, network.getId());
+          break;
+        case Event::Attack:
+          sprintf(tmp, "4 %d %d %d %d \n", eventid, playerid, network.getId(), arg1); // Here arg1 is the spell used
+          break;
+      }
+      NetworkHelper::SendMessage(tmp, connection);
+    }
+  }
+  void Network::recv(Manager* manager, Entity* e) {
         auto &enemies(manager->getGroup(Game::groupPlayers));
         while (SDLNet_CheckSockets(server, 0) > 0 && SDLNet_SocketReady(connection)) {
             int offset = 0;
@@ -258,4 +258,4 @@
                 e->getComponent<NetworkComponent>().setWaitingPlayer(false);
                 break;
         }
-	}
+  }

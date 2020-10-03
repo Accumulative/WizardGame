@@ -1,5 +1,5 @@
 #pragma once
-#include "SDL.h"
+#include <SDL2/SDL.h>
 #include <string>
 #include "ECS/ECS.h"
 #include "../../shared/Vector2D.h"

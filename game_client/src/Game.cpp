@@ -27,7 +27,7 @@ Vector2D mouse;
 
 SDL_Renderer* Game::renderer = nullptr;
 int recentlyChangedMap = 0;
-SDL_Rect Game::camera = { 0,0, 2000,1160};
+SDL_Rect Game::camera = { 0, 0, 2000, 1160 };
 const int Game::SCALE = 1;
 const int Game::TILE_SIZE = 32;
 const int TILESETSIZEX = 16;
@@ -36,96 +36,94 @@ const int TILESETSIZEY = 44;
 AssetManager* Game::assets = new AssetManager(&manager);
 
 auto& player(manager.addEntity());
-auto& label(manager.addEntity());
+auto& playerPositionLabel(manager.addEntity());
 auto& hover(manager.addEntity());
 
 Game::Game(SDL_Renderer *renderer)
 {
-	this->renderer = renderer;
-	player.addComponent<TransformComponent>(515.0f, 709.0f, 44, 33, 1, 1);
-	state = GameState::LoggedOut;
-	if (TTF_Init() == -1)
-	{
-		std::cout << "Error : SDL_TTF" << std::endl;
-	}
-	assets->AddTexture("terrain", "assets/magecity.png");
-	assets->AddTexture("player", "assets/WizardSheet.png");
-    assets->AddTexture("NPC1", "assets/RedWizardSheet.png");
-    assets->AddTexture("NPC2", "assets/GreenWizardSheet.png");
-    assets->AddTexture("enemy", "assets/YellowWizardSheet.png");
-	assets->AddTexture("projectile", "assets/proj.png");
-	assets->AddTexture("menu", "assets/Menu.png");
-	assets->AddTexture("menuButton", "assets/MenuButton.png");
-	assets->AddTexture("hover", "assets/ColTex.png");
-	assets->AddTexture("wizardone", "assets/WizardOne.png");
-	assets->AddTexture("wizardtwo", "assets/WizardTwo.png");
-	assets->AddTexture("playerbar", "assets/BattleInfoVar.png");
-	assets->AddTexture("textbox", "assets/Textbox.png");
-	assets->AddFont("arial", "assets/arial.ttf", 16);
+  this->renderer = renderer;
+  player.addComponent<TransformComponent>(515.0f, 709.0f, 44, 33, 1, 1);
+  state = GameState::LoggedOut;
+  if (TTF_Init() == -1)
+  {
+    std::cout << "Error : SDL_TTF" << std::endl;
+  }
+  assets->AddTexture("terrain", "/home/kieran/git/online-wizard-game/game_client/assets/magecity.png");
+  assets->AddTexture("player", "/home/kieran/git/online-wizard-game/game_client/assets/WizardSheet.png");
+  assets->AddTexture("NPC1", "/home/kieran/git/online-wizard-game/game_client/assets/RedWizardSheet.png");
+  assets->AddTexture("NPC2", "/home/kieran/git/online-wizard-game/game_client/assets/GreenWizardSheet.png");
+  assets->AddTexture("enemy", "/home/kieran/git/online-wizard-game/game_client/assets/YellowWizardSheet.png");
+  assets->AddTexture("projectile", "/home/kieran/git/online-wizard-game/game_client/assets/proj.png");
+  assets->AddTexture("menu", "/home/kieran/git/online-wizard-game/game_client/assets/Menu.png");
+  assets->AddTexture("menuButton", "/home/kieran/git/online-wizard-game/game_client/assets/MenuButton.png");
+  assets->AddTexture("hover", "/home/kieran/git/online-wizard-game/game_client/assets/ColTex.png");
+  assets->AddTexture("wizardone", "/home/kieran/git/online-wizard-game/game_client/assets/WizardOne.png");
+  assets->AddTexture("wizardtwo", "/home/kieran/git/online-wizard-game/game_client/assets/WizardTwo.png");
+  assets->AddTexture("playerbar", "/home/kieran/git/online-wizard-game/game_client/assets/BattleInfoVar.png");
+  assets->AddTexture("textbox", "/home/kieran/git/online-wizard-game/game_client/assets/Textbox.png");
+  assets->AddFont("arial", "/home/kieran/git/online-wizard-game/game_client/assets/arial.ttf", 16);
 }
 
 Game::~Game()
 {
-	delete assets;
-	if(isOnline) {
-		delete net;
-		delete map;
-		delete battle;
-		delete mainMenu;
-		delete hoverMenu;
-		delete yesNoPopup;
-		delete okPopup;
-	}
+  delete assets;
+  if(isOnline) {
+    delete net;
+    delete map;
+    delete battle;
+    delete mainMenu;
+    delete hoverMenu;
+    delete yesNoPopup;
+    delete okPopup;
+  }
 }
 
 void Game::init()
 {
-	std::cout << "I am initiating the game" << std::endl;
-	isOnline = true;
-	char ip [20];
-	std::string ipS = "127.0.0.1";
-	if(isOnline) {
-		//127.0.0.1
-		strcpy(ip, ipS.c_str()); 
-		net = new Network(ip);
-	}
+  std::cout << "I am initiating the game" << std::endl;
+  isOnline = true;
+  char ip [20];
+  std::string ipS = "127.0.0.1";
+  if(isOnline) {
+    //127.0.0.1
+    strcpy(ip, ipS.c_str()); 
+    net = new Network(ip);
+  }
 
-	hover.addComponent<TransformComponent>(Game::SCALE);
-	hover.addComponent<SpriteComponent>("hover", false, true);
-	hover.getComponent<SpriteComponent>().setShow(false);
+  hover.addComponent<TransformComponent>(Game::SCALE);
+  hover.addComponent<SpriteComponent>("hover", false, true);
+  hover.getComponent<SpriteComponent>().setShow(false);
 
-	map = new Map("terrain", Game::SCALE, Game::TILE_SIZE);
-	mainMenu = new Menu<EventTypes>( "menu", { 
-		{ "Continue", EventTypes::CloseMenu },
-		{ "Options", EventTypes::InGameOptions },
-		{ "Quit", EventTypes::Quit }
-	}, "", 1 );
-	hoverMenu = new Menu<EventTypes>( "menu", { 
-		{ "Fight", EventTypes::Fight },
-		{ "Trade", EventTypes::Trade },
-		{ "View stats", EventTypes::ViewStats },
-		{ "Back to game", EventTypes::CloseMenu }
-	}, "", 1);
-	yesNoPopup = new Menu<EventTypes>( "menu", { 
-		{ "Accept", EventTypes::Accept },
-		{ "Declined", EventTypes::Decline }
-	}, "", 1);
-	okPopup = new Menu<EventTypes>("menu", { 
-		{ "OK", EventTypes::CloseMenu }
-	}, "", 1 );
-	//ecs implementation
+  map = new Map("terrain", Game::SCALE, Game::TILE_SIZE);
+  mainMenu = new Menu<EventTypes>( "menu", { 
+    { "Continue", EventTypes::CloseMenu },
+    { "Options", EventTypes::InGameOptions },
+    { "Quit", EventTypes::Quit }
+  }, "", 1 );
+  hoverMenu = new Menu<EventTypes>( "menu", { 
+    { "Fight", EventTypes::Fight },
+    { "Trade", EventTypes::Trade },
+    { "View stats", EventTypes::ViewStats },
+    { "Back to game", EventTypes::CloseMenu }
+  }, "", 1);
+  yesNoPopup = new Menu<EventTypes>( "menu", { 
+    { "Accept", EventTypes::Accept },
+    { "Declined", EventTypes::Decline }
+  }, "", 1);
+  okPopup = new Menu<EventTypes>("menu", { 
+    { "OK", EventTypes::CloseMenu }
+  }, "", 1 );
+  //ecs implementation
 
-	player.addComponent<NetworkComponent>();
-	battle = new Battle("hover", net);
-	SDL_Color white = { 0, 0, 0, 255 };
-	
-	label.addComponent<UILabel>(10, 10, "Test String", "arial", white, 200, false);
+  player.addComponent<NetworkComponent>();
+  battle = new Battle("hover", net);
+  SDL_Color white = { 0, 0, 0, 255 };
+  playerPositionLabel.addComponent<UILabel>(10, 10, "Test String", "arial", white, 200, false);
 
-	// assets->CreateProjectile(Vector2D(600, 600), Vector2D(2,0),200, 2, "projectile");
-	// assets->CreateProjectile(Vector2D(600, 620), Vector2D(2, 0), 200, 2, "projectile");
-	// assets->CreateProjectile(Vector2D(400, 600), Vector2D(2, 1), 200, 2, "projectile");
-	// assets->CreateProjectile(Vector2D(600, 600), Vector2D(2, -1), 200, 2, "projectile");
-
+  // assets->CreateProjectile(Vector2D(600, 600), Vector2D(2,0),200, 2, "projectile");
+  // assets->CreateProjectile(Vector2D(600, 620), Vector2D(2, 0), 200, 2, "projectile");
+  // assets->CreateProjectile(Vector2D(400, 600), Vector2D(2, 1), 200, 2, "projectile");
+  // assets->CreateProjectile(Vector2D(600, 600), Vector2D(2, -1), 200, 2, "projectile");
 }
 
 auto& tiles(manager.getGroup(Game::groupMap));
@@ -138,170 +136,171 @@ auto& npcs(manager.getGroup(Game::groupNPCs));
 
 void Game::handleEvents()
 {
-	SDL_Event event;
-	while(SDL_PollEvent(&event) != 0) {
-		mainMenu->PollEvents(event);
-		hoverMenu->PollEvents(event);
-		yesNoPopup->PollEvents(event);
-		if(player.getComponent<BattleComponent>().GetCurrentState()== BattleState::InProgress) {
-			battle->PollEvents(event);
-		} else {
-			if(player.hasComponent<KeyboardController>())
-				player.getComponent<KeyboardController>().update(event);
-			switch (event.type)
-			{
-			case SDL_QUIT :
-				state = GameState::NotRunning;
-				break;
-			case SDL_MOUSEMOTION: 
-				mouse.x = event.motion.x + camera.x; 
-				mouse.y = event.motion.y + camera.y; 
-				break; 
-			case SDL_KEYDOWN :
-					switch (event.key.keysym.sym)
-					{
-						case SDLK_TAB:
-							mainMenu->LoadMenu();
-							break;
-						case SDLK_ESCAPE:
-							Game::state = GameState::NotRunning;
-							break;
-					}
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if(event.button.button == SDL_BUTTON_RIGHT) {
-					if( hover.getComponent<SpriteComponent>().getTarget() != -1 ) {
-						hoverMenu->LoadMenu();
-					}
-				}
-				break;
-			default:
-				break;
-			}
-		}
-	}
+  SDL_Event event;
+  while(SDL_PollEvent(&event) != 0) {
+    mainMenu->PollEvents(event);
+    hoverMenu->PollEvents(event);
+    yesNoPopup->PollEvents(event);
+    if(player.getComponent<BattleComponent>().GetCurrentState()== BattleState::InProgress) {
+      battle->PollEvents(event);
+    } else {
+      if(player.hasComponent<KeyboardController>())
+        player.getComponent<KeyboardController>().update(event);
+      switch (event.type)
+      {
+      case SDL_QUIT :
+        state = GameState::NotRunning;
+        break;
+      case SDL_MOUSEMOTION:
+        mouse.x = event.motion.x + camera.x;
+        mouse.y = event.motion.y + camera.y;
+        break;
+      case SDL_KEYDOWN :
+          switch (event.key.keysym.sym)
+          {
+            case SDLK_TAB:
+              mainMenu->LoadMenu();
+              break;
+            case SDLK_ESCAPE:
+              Game::state = GameState::NotRunning;
+              break;
+          }
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if(event.button.button == SDL_BUTTON_RIGHT) {
+          if( hover.getComponent<SpriteComponent>().getTarget() != -1 ) {
+            hoverMenu->LoadMenu();
+          }
+        }
+        break;
+      default:
+        break;
+      }
+    }
+  }
 }
 
 void Game::update()
 {
-	if(isOnline) {
-		auto* playernet = &player.getComponent<NetworkComponent>();
-		net->send(&player);
-		net->recv(&manager, &player);
-		if(state == GameState::Connected) {
-			TransformComponent playerPos = player.getComponent<TransformComponent>();
-			std::stringstream ss;
-			ss << "Player position: " << playerPos.position;
-			label.getComponent<UILabel>().SetLabelText(ss.str(), "arial");
-			manager.refresh();
-			manager.update();
-			if(player.getComponent<BattleComponent>().GetCurrentState() != BattleState::InProgress) {
+  if(isOnline) {
+    auto* playernet = &player.getComponent<NetworkComponent>();
+    net->send(&player);
+    net->recv(&manager, &player);
+    if(state == GameState::Connected) {
+      TransformComponent playerPos = player.getComponent<TransformComponent>();
+      std::stringstream ss;
+      ss << "Player position: " << playerPos.position;
+      playerPositionLabel.getComponent<UILabel>().SetLabelText(ss.str(), "arial");
+      manager.refresh();
+      manager.update();
+      if(player.getComponent<BattleComponent>().GetCurrentState() != BattleState::InProgress) {
                 CheckCollisions();
-				camera.x = static_cast<int>(player.getComponent<TransformComponent>().position.x - 400);
-				camera.y = static_cast<int>(player.getComponent<TransformComponent>().position.y - 320);
+        camera.x = static_cast<int>(player.getComponent<TransformComponent>().position.x - 400);
+        camera.y = static_cast<int>(player.getComponent<TransformComponent>().position.y - 320);
 
-				if(player.getComponent<BattleComponent>().GetBattleRequest() != -1 && player.getComponent<BattleComponent>().GetCurrentState() == BattleState::RequestedOf) {
-					if(!yesNoPopup->IsLoaded()) {
-						yesNoPopup->SetText("A player has invited you to a battle. Do you accept?");
-						yesNoPopup->LoadMenu();
-					}
-				}
+        if(player.getComponent<BattleComponent>().GetBattleRequest() != -1 && player.getComponent<BattleComponent>().GetCurrentState() == BattleState::RequestedOf) {
+          if(!yesNoPopup->IsLoaded()) {
+            yesNoPopup->SetText("A player has invited you to a battle. Do you accept?");
+            yesNoPopup->LoadMenu();
+          }
+        }
 
-				if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::Accepted) {
-					int playerid = hover.getComponent<SpriteComponent>().getTarget();
-					for(auto& enemy : players) {
-						if(enemy->getComponent<NetworkComponent>().getId() == playerid) {
-								std::cout << " start battle ground" << std::endl;
-							battle->StartBattle(&player, enemy);
-							player.getComponent<BattleComponent>().SetState(BattleState::InProgress);
-							// hover.getComponent<SpriteComponent>().setTarget(-1);
-							yesNoPopup->Remove();
-							break;
-						}
-					}
-				} else if (player.getComponent<BattleComponent>().GetCurrentState() == BattleState::Declined) {
-					okPopup->SetText("Your battle request has been declined");
-					okPopup->LoadMenu();
-					player.getComponent<BattleComponent>().RequestBattle(-1);
-					player.getComponent<BattleComponent>().SetState(BattleState::NotStarted);
-				}
-			} else {
-				if(battle->Finished()) {
-					player.getComponent<BattleComponent>().RequestBattle(-1);
-					player.getComponent<BattleComponent>().SetState(BattleState::NotStarted);
-				}
-			}
-		} else {
-			std::cout << "Connecting" << std::endl;
-			if(playernet->getId() != -1 && !playernet->isLoaded()) {
-				MapData data = GetMapData(player.getComponent<TransformComponent>().mapId);
-				map->LoadMap(data.mapId, data.xSize, data.ySize, TILESETSIZEX, TILESETSIZEY);
-				net->SwitchMap(&player, data.mapId, player.getComponent<TransformComponent>().position);
-				playernet->setLoaded(true);
-				state = GameState::Connected;
-			}
-		}
-		EventTypes selectedOption = mainMenu->GetSelectedOption() + hoverMenu->GetSelectedOption() + yesNoPopup->GetSelectedOption();
-		switch(selectedOption) {
-			case EventTypes::CloseMenu:
-				mainMenu->Remove();
-				hoverMenu->Remove();
-				break;
-			case EventTypes::InGameOptions:
-				break;
-			case EventTypes::ViewStats:
-				state = GameState::NotRunning;
-				break;
-			case EventTypes::Fight:
-				if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::NotStarted && hover.getComponent<SpriteComponent>().getTarget() != -1) {
-					std::cout << " Send net " << std::endl;
-					net->SendPlayerEvent(&player, hover.getComponent<SpriteComponent>().getTarget(), Event::Battle);
-					player.getComponent<NetworkComponent>().setWaitingPlayer(true);
-					player.getComponent<BattleComponent>().SetState(BattleState::Requested);
-					hoverMenu->Remove();
-				}
-				break;
-			case EventTypes::Accept:
-				if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::RequestedOf) {
-						int playerid = player.getComponent<BattleComponent>().GetBattleRequest();
-						std::cout << "Attempting battle with " << playerid << std::endl;
-						
-						for(auto enemy : players) {
-							if(enemy->getComponent<NetworkComponent>().getId() == playerid) {
-								std::cout << " start battle ground" << std::endl;
-								player.getComponent<BattleComponent>().SetState(BattleState::InProgress);
-								battle->StartBattle(&player, enemy);
-								net->SendPlayerEvent(&player, playerid, Event::Battle);
-								yesNoPopup->Remove();
-								break;
-							}
-						}
-				}
-				break;
-			case EventTypes::Decline:
-				if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::RequestedOf) {
-					int playerid = player.getComponent<BattleComponent>().GetBattleRequest();
-					yesNoPopup->Remove();
-					net->SendPlayerEvent(&player, playerid, Event::Decline);
-					player.getComponent<BattleComponent>().SetState(BattleState::NotStarted);
-				}
-				break;
-		}
-	}
+        if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::Accepted) {
+          int playerid = hover.getComponent<SpriteComponent>().getTarget();
+          for(auto& enemy : players) {
+            if(enemy->getComponent<NetworkComponent>().getId() == playerid) {
+                std::cout << " start battle ground" << std::endl;
+              battle->StartBattle(&player, enemy);
+              player.getComponent<BattleComponent>().SetState(BattleState::InProgress);
+              // hover.getComponent<SpriteComponent>().setTarget(-1);
+              yesNoPopup->Remove();
+              break;
+            }
+          }
+        } else if (player.getComponent<BattleComponent>().GetCurrentState() == BattleState::Declined) {
+          okPopup->SetText("Your battle request has been declined");
+          okPopup->LoadMenu();
+          player.getComponent<BattleComponent>().RequestBattle(-1);
+          player.getComponent<BattleComponent>().SetState(BattleState::NotStarted);
+        }
+      } else {
+        if(battle->Finished()) {
+          player.getComponent<BattleComponent>().RequestBattle(-1);
+          player.getComponent<BattleComponent>().SetState(BattleState::NotStarted);
+        }
+      }
+    } else {
+      std::cout << "Connecting" << std::endl;
+      if(playernet->getId() != -1 && !playernet->isLoaded()) {
+        MapData data = GetMapData(player.getComponent<TransformComponent>().mapId);
+        map->LoadMap(data.mapId, data.xSize, data.ySize, TILESETSIZEX, TILESETSIZEY);
+        net->SwitchMap(&player, data.mapId, player.getComponent<TransformComponent>().position);
+        playernet->setLoaded(true);
+        state = GameState::Connected;
+      }
+    }
+    EventTypes selectedOption = mainMenu->GetSelectedOption() + hoverMenu->GetSelectedOption() + yesNoPopup->GetSelectedOption();
+    switch(selectedOption) {
+      case EventTypes::CloseMenu:
+        mainMenu->Remove();
+        hoverMenu->Remove();
+        break;
+      case EventTypes::InGameOptions:
+        break;
+      case EventTypes::ViewStats:
+        state = GameState::NotRunning;
+        break;
+      case EventTypes::Fight:
+        if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::NotStarted && hover.getComponent<SpriteComponent>().getTarget() != -1) {
+          std::cout << " Send net " << std::endl;
+          net->SendPlayerEvent(&player, hover.getComponent<SpriteComponent>().getTarget(), Event::Battle);
+          player.getComponent<NetworkComponent>().setWaitingPlayer(true);
+          player.getComponent<BattleComponent>().SetState(BattleState::Requested);
+          hoverMenu->Remove();
+        }
+        break;
+      case EventTypes::Accept:
+        if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::RequestedOf) {
+            int playerid = player.getComponent<BattleComponent>().GetBattleRequest();
+            std::cout << "Attempting battle with " << playerid << std::endl;
+            for(auto enemy : players) {
+              if(enemy->getComponent<NetworkComponent>().getId() == playerid) {
+                std::cout << " start battle ground" << std::endl;
+                player.getComponent<BattleComponent>().SetState(BattleState::InProgress);
+                battle->StartBattle(&player, enemy);
+                net->SendPlayerEvent(&player, playerid, Event::Battle);
+                yesNoPopup->Remove();
+                break;
+              }
+            }
+        }
+        break;
+      case EventTypes::Decline:
+        if(player.getComponent<BattleComponent>().GetCurrentState() == BattleState::RequestedOf) {
+          int playerid = player.getComponent<BattleComponent>().GetBattleRequest();
+          yesNoPopup->Remove();
+          net->SendPlayerEvent(&player, playerid, Event::Decline);
+          player.getComponent<BattleComponent>().SetState(BattleState::NotStarted);
+        }
+        break;
+      default:
+        break;
+    }
+  }
 
-	if (camera.x < -200)
-		camera.x = -200;
-	if (camera.y < -200)
-		camera.y = -200;
-	if (camera.x > camera.w)
-		camera.x = camera.w;
-	if (camera.y > camera.h)
-		camera.y = camera.h;
+  if (camera.x < -200)
+    camera.x = -200;
+  if (camera.y < -200)
+    camera.y = -200;
+  if (camera.x > camera.w)
+    camera.x = camera.w;
+  if (camera.y > camera.h)
+    camera.y = camera.h;
 
-	if(recentlyChangedMap > 0) {
-		recentlyChangedMap--;
-	}
-	
+  if(recentlyChangedMap > 0) {
+    recentlyChangedMap--;
+  }
+  
 }
 
 void Game::CheckCollisions() {
@@ -361,16 +360,16 @@ void Game::CheckCollisions() {
 }
 
 void Game::setPlayerState(player_data p_data) {
-	player.getComponent<TransformComponent>().position.x = p_data.xpos;
-	player.getComponent<TransformComponent>().position.y = p_data.ypos;
-	player.getComponent<TransformComponent>().mapId = p_data.map_id;
+  player.getComponent<TransformComponent>().position.x = p_data.xpos;
+  player.getComponent<TransformComponent>().position.y = p_data.ypos;
+  player.getComponent<TransformComponent>().mapId = p_data.map_id;
 }
 player_data Game::getPlayerState() {
-	player_data data;
-	data.map_id = player.getComponent<TransformComponent>().mapId ;
-	data.xpos = static_cast<int>(player.getComponent<TransformComponent>().position.x);
-	data.ypos = static_cast<int>(player.getComponent<TransformComponent>().position.y);
-	return data;
+  player_data data;
+  data.map_id = player.getComponent<TransformComponent>().mapId ;
+  data.xpos = static_cast<int>(player.getComponent<TransformComponent>().position.x);
+  data.ypos = static_cast<int>(player.getComponent<TransformComponent>().position.y);
+  return data;
 }
 
 void Game::render()
@@ -391,7 +390,7 @@ void Game::render()
         }
         // for (auto& c : colliders)
         // {
-        // 	c->draw();
+        //  c->draw();
         // }
         for (auto& p : players)
         {
@@ -406,7 +405,7 @@ void Game::render()
             if(t->getComponent<TileComponent>().layer == TileLayer::Front)
                 t->draw();
         }
-        label.draw();
+        playerPositionLabel.draw();
         hover.draw();
         hoverMenu->DrawMenu();
         yesNoPopup->DrawMenu();

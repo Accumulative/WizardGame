@@ -1,7 +1,7 @@
 #include <vector>
-#include <Vector2D.h>
+#include "../../shared/Vector2D.h"
 #include <sqlite3.h>
-#include <data_struct.h>
+#include "../../shared/data_struct.h"
 
 class NPC {
 	public:
